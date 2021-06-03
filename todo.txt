@@ -1,0 +1,4 @@
+to do to make active:
+correct channel_blacklist = 
+token 
+allow keep alive
