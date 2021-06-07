@@ -19,28 +19,24 @@ token = os.environ['token']
 client = discord.Client()
 cooldown = 5.0
 channel_whitelist = [849653420544884817]
-# changed to channel white 
-class testing(Cog):
+# changed to channel whitelist
+class LogAnalyser(Cog):
   _analysis_colour = 0x5a7474
-  _potato = '🥔'
   _log_download_failed = '❗️'
   _log_analyser_failed = '❌'
-
   _filtered_log_needles = ('obs-streamelements.dll', 'ftl_stream_create')
   _log_hosts = ('https://obsproject.com/logs/', 'https://hastebin.com/',
   'https://pastebin.com/')
-
   _blank_urls = [
       "https://obsproject.com/logs/", "https://hastebin.com/",
       "https://pastebin.com/"
   ]
+  timeout = ClientTimeout(total=60)
+  session = ClientSession(timeout=timeout)
+  bot = Bot
+  limiter =  RateLimiter(20.0)
   
-  def __init__(self, bot, limitor, session):
-    self.timeout = ClientTimeout(total=60)
-    self.session = ClientSession(timeout=self.timeout)
-    self.bot = Bot
-    self.limiter =  RateLimiter(20.0)
-
+  
 
 
   @client.event
@@ -48,22 +44,24 @@ class testing(Cog):
       print('We have logged in as {0.user}'.format(client))
 
 
-  @client.event
-  async def on_message(self, msg: Message):
-      if msg.author.self.bot:
-          return
-          #Checks to see if the message is a bot message
 
-      if not msg.channel.id in channel_whitelist:
+  @client.event
+  async def on_message(Message):
+      print("hahaha")
+      if Message.author.bot:
+          return
+          #Checks to see if the Message is a bot Message
+
+      if not Message.channel.id in channel_whitelist:
           return
           #we dont want bot in every channel
-      if not msg.attachments and not any(lh in msg.content for lh in self._log_hosts):
+      if not Message.attachments and not any(lh in Message.content for lh in _log_hosts):
           print("Not a log file")
-          #await msg.channel.send("Not a log file")
+          #await Message.channel.send("Not a log file")
           return
 
       '''
-      logURL = msg.content
+      logURL = Message.content
       for url in _blank_urls:
           logURL = logURL.replace(url, "")
 
@@ -73,24 +71,24 @@ class testing(Cog):
       return
       '''
 
-      print("Message has log file: " + str(msg.content))
+      print("Message has log file: " + str(Message.content))
 
       # list of candidate tuples consisting of (raw_url, web_url)
       log_candidates = []
 
-      # message attachments
-      for attachment in msg.attachments:
+      # Message attachments
+      for attachment in Message.attachments:
           if attachment.url.endswith('.txt'):
               # collisions are possible here, but unlikely, we'll see if it becomes a problem
 
-              if not self.limiter.is_limited(attachment.filename):
+              if not limiter.is_limited(attachment.filename):
                   log_candidates.append(attachment.url)
               else:
-                  print(f'{msg.author} attempted to upload a rate-limited log.')
+                  print(f'{Message.author} attempted to upload a rate-limited log.')
 
-      # links in message
-      for part in [p.strip() for p in msg.content.split()]:
-          if any(part.startswith(lh) for lh in self._log_hosts):
+      # links in Message
+      for part in [p.strip() for p in Message.content.split()]:
+          if any(part.startswith(lh) for lh in _log_hosts):
               print("logging (87)")
 
               if 'obsproject.com' in part:
@@ -116,11 +114,11 @@ class testing(Cog):
                   continue
                   print("made it to else")
               
-              if not self.limiter.is_limited(url):
+              if not limiter.is_limited(url):
                   log_candidates.append(url)
                   print("appeneded by limiter ")
               else:
-                  print(f'{msg.author} attempted to post a rate-limited log.')
+                  print(f'{Message.author} attempted to post a rate-limited log.')
 
           #print("ehhH? (119)")  
       
@@ -139,32 +137,32 @@ class testing(Cog):
 
       async def react(emote):
           try:
-              await msg.add_reaction(emote)
+              await Message.add_reaction(emote)
           except Exception as e:
               print(f'Adding reaction failed with "{repr(e)}')
 
       for log_url in log_candidates:
           print("got to log_url in log_candidates")
           try:
-              log_content = await self.download_log(log_url)
+              log_content = await download_log(log_url)
               break
           except ValueError:  # not a valid OBS log
               continue
           except (ClientResponseError, TimeoutError):  # file download failed
               print(f'Failed retrieving log from "{log_url}"')
-              await react(self._log_download_failed)
+              await react(_log_download_failed)
           except Exception as e:  # catch everything else
               print(f'Unhandled exception when downloading log: {repr(e)}')
       else:
           return
     
 
-      async with msg.channel.typing():
+      async with Message.channel.typing():
           print("typing")
           log_analysis = None
           try:
               # fetch log analysis from OBS analyser
-              log_analysis = await self.fetch_log_analysis(log_url)
+              log_analysis = await fetch_log_analysis(log_url)
           except ValueError:
               print(f'Analyser result for "{log_url}" is invalid.')
           except ClientResponseError:  # file download failed
@@ -175,30 +173,30 @@ class testing(Cog):
               print(f'Unhandled exception when analysing log: {repr(e)}')
           finally:
               if not log_analysis:
-                  return await react(self._log_analyser_failed)
+                  return await react(_log_analyser_failed)
 
                   anal_url = f'https://obsproject.com/tools/analyzer?log_url={urlencode(log_url)}'
                   embed = Embed(colour=Colour(0x5a7474), url=anal_url)
 
-              #formatting message
-              def pretty_print_messages(msgs):
+              #formatting Message
+              def pretty_print_Messages(Messages):
                   ret = []
-                  for _msg in msgs:
-                      ret.append(f'- {_msg}')
+                  for _Message in Messages:
+                      ret.append(f'- {_Message}')
                   return '\n'.join(ret)
                   print("formatting embed")
 
               if log_analysis['critical']:
                   embed.add_field(name="🛑 Critical",
-                                  value=pretty_print_messages(
+                                  value=pretty_print_Messages(
                                       log_analysis['critical']))
               if log_analysis['warning']:
                   embed.add_field(name="⚠️ Warning",
-                                  value=pretty_print_messages(
+                                  value=pretty_print_Messages(
                                       log_analysis['warning']))
               if log_analysis['info']:
                   embed.add_field(name="ℹ️ Info",
-                                  value=pretty_print_messages(
+                                  value=pretty_print_Messages(
                                       log_analysis['info']))
 
               embed.add_field(
@@ -209,19 +207,19 @@ class testing(Cog):
 
               #include filtered log in case SE or FTL spam is detected
               if 'obsproject.com' in log_url and any(
-                      elem in log_content for elem in self._filtered_log_needles):
+                      elem in log_content for elem in _filtered_log_needles):
                   clean_url = log_url.replace('obsproject.com',
                                               'obsbot.rodney.io')
-                  embed.description = f'*Log contains debug messages (browser/ftl/etc), for a filtered version [click here]({clean_url})*\n'
+                  embed.description = f'*Log contains debug Messages (browser/ftl/etc), for a filtered version [click here]({clean_url})*\n'
                   print("sending log analysis")
-                  return await msg.channel.send(embed=embed,
-                                                reference=msg,
+                  return await Message.channel.send(embed=embed,
+                                                reference=Message,
                                                 mention_author=True)
 
 
-  async def fetch_log_analysis(self, url):
+  async def fetch_log_analysis(url):
       print("fetching analysis")
-      async with self.session.get('https://obsproject.com/analyzer-api/', params=dict(url=url, format='json')) as r:
+      async with session.get('https://obsproject.com/analyzer-api/', params=dict(url=url, format='json')) as r:
           if r.status == 200:
               j = await r.json()
               # check if analysis response is actually valid
@@ -232,9 +230,9 @@ class testing(Cog):
               r.raise_for_status()
 
 
-  async def download_log(self, url):
+  async def download_log(url):
       print("downloading log")
-      async with self.session.get(url) as r:
+      async with session.get(url) as r:
           print("is this it ")
           if r.status == 200:
               try:
