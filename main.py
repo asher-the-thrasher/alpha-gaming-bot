@@ -20,34 +20,29 @@ client = discord.Client()
 cooldown = 5.0
 channel_whitelist = [849653420544884817]
 # changed to channel whitelist
+
+_analysis_colour = 0x5a7474
+_log_download_failed = '❗️'
+_log_analyser_failed = '❌'
+_filtered_log_needles = ('obs-streamelements.dll', 'ftl_stream_create')
+_log_hosts = ('https://obsproject.com/logs/', 'https://hastebin.com/',
+'https://pastebin.com/')
+_blank_urls = [
+    "https://obsproject.com/logs/", "https://hastebin.com/",
+    "https://pastebin.com/"
+]
+timeout = ClientTimeout(total=60)
+bot = Bot
+limiter =  RateLimiter(20.0)
+session = None
 class LogAnalyser(Cog):
-  _analysis_colour = 0x5a7474
-  _log_download_failed = '❗️'
-  _log_analyser_failed = '❌'
-  _filtered_log_needles = ('obs-streamelements.dll', 'ftl_stream_create')
-  _log_hosts = ('https://obsproject.com/logs/', 'https://hastebin.com/',
-  'https://pastebin.com/')
-  _blank_urls = [
-      "https://obsproject.com/logs/", "https://hastebin.com/",
-      "https://pastebin.com/"
-  ]
-  timeout = ClientTimeout(total=60)
-  session = ClientSession(timeout=timeout)
-  bot = Bot
-  limiter =  RateLimiter(20.0)
-  
-  
-
-
   @client.event
   async def on_ready():
+      session = ClientSession(timeout=timeout)
       print('We have logged in as {0.user}'.format(client))
-
-
 
   @client.event
   async def on_message(Message):
-      print("hahaha")
       if Message.author.bot:
           return
           #Checks to see if the Message is a bot Message
@@ -253,7 +248,6 @@ class LogAnalyser(Cog):
           else:
               # Raise if status >= 400
               r.raise_for_status()
-      print("maybe here")
 
 
 #keep_alive()
