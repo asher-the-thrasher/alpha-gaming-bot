@@ -8,7 +8,7 @@ from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 from asyncio import TimeoutError
 from discord import Message, Embed, Colour
 
-#from keep_alive import keep_alive  #keep this!!!
+from keep_alive import keep_alive  
 from discord.ext.commands.bot import Bot
 
 from RateLimit import RateLimiter
@@ -18,8 +18,16 @@ token = os.environ['token']
 
 client = discord.Client()
 cooldown = 5.0
-channel_whitelist = [849653420544884817]
-# changed to channel whitelist
+
+#channels to  whitelist
+general_help = 473309543858962433
+stream_software = 764008007658897439
+pc_help = 599861596159737876
+audio_help = 599861521543200789
+testing_playroom = 744785084313501728
+lights_camera_editing = 599861471874383882
+
+channel_whitelist = [849653420544884817, general_help, stream_software, pc_help, audio_help, testing_playroom, lights_camera_editing]
 
 _analysis_colour = 0x5a7474
 _log_download_failed = '❗️'
@@ -27,17 +35,18 @@ _log_analyser_failed = '❌'
 _filtered_log_needles = ('obs-streamelements.dll', 'ftl_stream_create')
 _log_hosts = ('https://obsproject.com/logs/', 'https://hastebin.com/',
 'https://pastebin.com/')
-_blank_urls = [
-    "https://obsproject.com/logs/", "https://hastebin.com/",
-    "https://pastebin.com/"
-]
+
 timeout = ClientTimeout(total=60)
 bot = Bot
 limiter =  RateLimiter(20.0)
-session = None
+
+
 class LogAnalyser(Cog):
+  session = None
+
   @client.event
   async def on_ready():
+      global session
       session = ClientSession(timeout=timeout)
       print('We have logged in as {0.user}'.format(client))
 
@@ -50,23 +59,13 @@ class LogAnalyser(Cog):
       if not Message.channel.id in channel_whitelist:
           return
           #we dont want bot in every channel
+
       if not Message.attachments and not any(lh in Message.content for lh in _log_hosts):
-          print("Not a log file")
-          #await Message.channel.send("Not a log file")
           return
+          # Returns if the message is not a log file
+          
 
-      '''
-      logURL = Message.content
-      for url in _blank_urls:
-          logURL = logURL.replace(url, "")
-
-      if logURL == "":
-      print("Not a log file - Empty log")
-      Ensures it's not an empty log, cancels
-      return
-      '''
-
-      print("Message has log file: " + str(Message.content))
+      #print("Message has log file: " + str(Message.content))
 
       # list of candidate tuples consisting of (raw_url, web_url)
       log_candidates = []
@@ -84,46 +83,37 @@ class LogAnalyser(Cog):
       # links in Message
       for part in [p.strip() for p in Message.content.split()]:
           if any(part.startswith(lh) for lh in _log_hosts):
-              print("logging (87)")
 
               if 'obsproject.com' in part:
                   url = part
-                  print("made it to checking for obsproject.com")
                   log_candidates.append(url)
-                  print("log candidate:" + url)
                   continue
               elif 'hastebin.com' in part:
                   hastebin_id = part.rsplit('/', 1)[1]
                   if not hastebin_id:
                       continue
                   url = f'https://hastebin.com/raw/{hastebin_id}'
-                  print("made it to checking for hastebin.com")
               elif 'pastebin.com' in part:
                   pastebin_id = part.rsplit('/', 1)[1]
                   if not pastebin_id:
                       continue
                   url = f'https://pastebin.com/raw/{pastebin_id}'
-                  print("made it to checking for pastebin.com")
 
               else:
                   continue
-                  print("made it to else")
               
               if not limiter.is_limited(url):
                   log_candidates.append(url)
-                  print("appeneded by limiter ")
               else:
                   print(f'{Message.author} attempted to post a rate-limited log.')
 
-          #print("ehhH? (119)")  
       
-      print("prior to log if (118)")
       if log_candidates:
-          print("log candidate works!")
-          #return
+          #print("log candidate works!")
+          return
 
       if not log_candidates:
-          print("not log candidate")
+          #print("not log candidate")
           return
 
       if len(log_candidates) > 3:
@@ -137,7 +127,6 @@ class LogAnalyser(Cog):
               print(f'Adding reaction failed with "{repr(e)}')
 
       for log_url in log_candidates:
-          print("got to log_url in log_candidates")
           try:
               log_content = await download_log(log_url)
               break
@@ -153,7 +142,6 @@ class LogAnalyser(Cog):
     
 
       async with Message.channel.typing():
-          print("typing")
           log_analysis = None
           try:
               # fetch log analysis from OBS analyser
@@ -167,11 +155,12 @@ class LogAnalyser(Cog):
           except Exception as e:  # catch everything else
               print(f'Unhandled exception when analysing log: {repr(e)}')
           finally:
+              print("writing message (174)")
               if not log_analysis:
                   return await react(_log_analyser_failed)
 
-                  anal_url = f'https://obsproject.com/tools/analyzer?log_url={urlencode(log_url)}'
-                  embed = Embed(colour=Colour(0x5a7474), url=anal_url)
+              anal_url = f'https://obsproject.com/tools/analyzer?log_url={urlencode(log_url)}'
+              embed = Embed(colour=Colour(0x5a7474), url=anal_url)
 
               #formatting Message
               def pretty_print_Messages(Messages):
@@ -179,7 +168,6 @@ class LogAnalyser(Cog):
                   for _Message in Messages:
                       ret.append(f'- {_Message}')
                   return '\n'.join(ret)
-                  print("formatting embed")
 
               if log_analysis['critical']:
                   embed.add_field(name="🛑 Critical",
@@ -199,56 +187,49 @@ class LogAnalyser(Cog):
                   inline=False,
                   value=
                   f'[**Click here for solutions / full analysis**]({anal_url})')
-
+              
               #include filtered log in case SE or FTL spam is detected
-              if 'obsproject.com' in log_url and any(
-                      elem in log_content for elem in _filtered_log_needles):
+              if 'obsproject.com' in log_url and any(elem in log_content for elem in _filtered_log_needles):
                   clean_url = log_url.replace('obsproject.com',
                                               'obsbot.rodney.io')
                   embed.description = f'*Log contains debug Messages (browser/ftl/etc), for a filtered version [click here]({clean_url})*\n'
                   print("sending log analysis")
-                  return await Message.channel.send(embed=embed,
-                                                reference=Message,
+              
+              return await Message.channel.send(embed=embed, reference=Message,
                                                 mention_author=True)
 
-
-  async def fetch_log_analysis(url):
-      print("fetching analysis")
-      async with session.get('https://obsproject.com/analyzer-api/', params=dict(url=url, format='json')) as r:
-          if r.status == 200:
-              j = await r.json()
-              # check if analysis response is actually valid
-              if not all(i in j for i in ('critical', 'warning', 'info')):
-                  raise ValueError('Analyser result invalid')
-              return j
-          else:
-              r.raise_for_status()
+async def fetch_log_analysis(url):
+    async with session.get('https://obsproject.com/analyzer-api/', params=dict(url=url, format='json')) as r:
+        if r.status == 200:
+            j = await r.json()
+            # check if analysis response is actually valid
+            if not all(i in j for i in ('critical', 'warning', 'info')):
+                raise ValueError('Analyser result invalid')
+            return j
+        else:
+            r.raise_for_status()
 
 
-  async def download_log(url):
-      print("downloading log")
-      async with session.get(url) as r:
-          print("is this it ")
-          if r.status == 200:
-              try:
-                  print("status 200 (line 232)")
-                  log = await r.text()
-              except UnicodeDecodeError:
-                  print(
-                      'Decoding log failed, trying with ISO-8859-1 encoding forced...'
-                  )
-                  log = await r.text(encoding='ISO-8859-1')
-              if 'Stack' in log and 'EIP' in log or 'Anonymous UUID' in log or 'Fault address:' in log:
-                  raise ValueError('Log is crash log')
-              if 'log file uploaded at' not in log:  # uploaded within OBS
-                  if 'Startup complete' not in log:  # not uploaded within OBS but still a log
-                      raise ValueError('Not a (valid) OBS log')
-              print("downloading log complete")
-              return log
-          else:
-              # Raise if status >= 400
-              r.raise_for_status()
+async def download_log(url):
+    async with session.get(url) as r:
+        if r.status == 200:
+            try:
+                log = await r.text()
+            except UnicodeDecodeError:
+                print(
+                    'Decoding log failed, trying with ISO-8859-1 encoding forced...'
+                )
+                log = await r.text(encoding='ISO-8859-1')
+            if 'Stack' in log and 'EIP' in log or 'Anonymous UUID' in log or 'Fault address:' in log:
+                raise ValueError('Log is crash log')
+            if 'log file uploaded at' not in log:  # uploaded within OBS
+                if 'Startup complete' not in log:  # not uploaded within OBS but still a log
+                    raise ValueError('Not a (valid) OBS log')
+            return log
+        else:
+            # Raise if status >= 400
+            r.raise_for_status()
 
 
-#keep_alive()
+keep_alive()
 client.run(token)
