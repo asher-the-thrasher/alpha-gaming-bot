@@ -1,3 +1,6 @@
+# A Discord bot that analyzes OBS log files for the Alpha Gaming discord
+# Contributors: Asher_The_Thrasher, Goldeneyes, Awkward Potato, Spartichoas
+
 import os
 import discord
 
@@ -27,11 +30,14 @@ audio_help = 599861521543200789
 testing_playroom = 744785084313501728
 lights_camera_editing = 599861471874383882
 
-channel_whitelist = [849653420544884817, general_help, stream_software, pc_help, audio_help, testing_playroom, lights_camera_editing]
+channel_whitelist = [general_help, stream_software, pc_help, audio_help, testing_playroom, lights_camera_editing]
+# Whitelisted channels; bot-spam-testing, testing-20
+
+#channel_whitelist = [849653420544884817, 851970921501687828]
 
 _analysis_colour = 0x5a7474
-_log_download_failed = '❗️'
-_log_analyser_failed = '❌'
+_log_download_failed = '\U00002757'
+_log_analyser_failed = '\U0001F6AB'
 _filtered_log_needles = ('obs-streamelements.dll', 'ftl_stream_create')
 _log_hosts = ('https://obsproject.com/logs/', 'https://hastebin.com/',
 'https://pastebin.com/')
@@ -107,10 +113,7 @@ class LogAnalyser(Cog):
               else:
                   print(f'{Message.author} attempted to post a rate-limited log.')
 
-      
-      if log_candidates:
-          #print("log candidate works!")
-          return
+
 
       if not log_candidates:
           #print("not log candidate")
@@ -155,7 +158,6 @@ class LogAnalyser(Cog):
           except Exception as e:  # catch everything else
               print(f'Unhandled exception when analysing log: {repr(e)}')
           finally:
-              print("writing message (174)")
               if not log_analysis:
                   return await react(_log_analyser_failed)
 
@@ -193,7 +195,6 @@ class LogAnalyser(Cog):
                   clean_url = log_url.replace('obsproject.com',
                                               'obsbot.rodney.io')
                   embed.description = f'*Log contains debug Messages (browser/ftl/etc), for a filtered version [click here]({clean_url})*\n'
-                  print("sending log analysis")
               
               return await Message.channel.send(embed=embed, reference=Message,
                                                 mention_author=True)
