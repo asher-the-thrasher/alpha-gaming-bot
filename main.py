@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from cogs.log_analyzer import LogAnalyzer
 
-# from keep_alive import keep_alive
+# from utils.keep_alive import keep_alive
 
 # secret bot token
 load_dotenv()

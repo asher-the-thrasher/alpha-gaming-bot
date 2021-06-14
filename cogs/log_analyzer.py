@@ -6,7 +6,7 @@ from discord import Embed, Colour
 from discord.ext.commands import Cog
 from discord.ext.commands.bot import Bot
 
-from RateLimit import RateLimiter
+from utils.rate_limit import RateLimiter
 
 # channels to  whitelist
 general_help = 473309543858962433
