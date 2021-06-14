@@ -3,11 +3,9 @@
 
 import os
 
-from aiohttp import ClientTimeout
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from RateLimit import RateLimiter
 from cogs.log_analyzer import LogAnalyzer
 
 # from keep_alive import keep_alive
@@ -18,10 +16,13 @@ token = os.environ['token']
 
 bot = commands.Bot(command_prefix="!")
 
-timeout = ClientTimeout(total=60)
-limiter = RateLimiter(20.0)
-
 bot.add_cog(LogAnalyzer(bot))
+
+
+@bot.event
+async def on_ready():
+    print('We have logged in as {0.user}'.format(bot))
+
 
 # keep_alive()
 bot.run(token)
