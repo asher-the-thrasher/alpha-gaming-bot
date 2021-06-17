@@ -4,25 +4,25 @@
 import os
 
 from discord.ext import commands
-from dotenv import load_dotenv
 
 from cogs.log_analyzer import LogAnalyzer
 
-# from utils.keep_alive import keep_alive
+from utils.keep_alive import keep_alive
+
+from utils.config import command_prefix
 
 # secret bot token
-load_dotenv()
 token = os.environ['token']
 
-bot = commands.Bot(command_prefix="!")
 
-bot.add_cog(LogAnalyzer(bot))
+client = commands.Bot(command_prefix=command_prefix)
+client.add_cog(LogAnalyzer(client))
 
 
-@bot.event
+@client.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(bot))
+    print('We have logged in as {0.user}'.format(client))
 
 
-# keep_alive()
-bot.run(token)
+keep_alive()
+client.run(token)

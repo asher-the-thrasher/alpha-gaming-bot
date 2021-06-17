@@ -7,21 +7,9 @@ from discord.ext.commands import Cog
 from discord.ext.commands.bot import Bot
 
 from utils.rate_limit import RateLimiter
-
-# channels to  whitelist
-general_help = 473309543858962433
-stream_software = 764008007658897439
-pc_help = 599861596159737876
-audio_help = 599861521543200789
-testing_playroom = 744785084313501728
-lights_camera_editing = 599861471874383882
-
-channel_whitelist = [general_help, stream_software, pc_help, audio_help, testing_playroom, lights_camera_editing,
-                     744333418724065373]
-
+from utils.config import channel_whitelist
 
 class LogAnalyzer(Cog):
-    _analysis_colour = 0x5a7474
     _log_download_failed = '\U00002757'
     _log_analyser_failed = '\U0001F6AB'
     _filtered_log_needles = ('obs-streamelements.dll', 'ftl_stream_create')
