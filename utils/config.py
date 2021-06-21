@@ -15,3 +15,8 @@ _analysis_colour = 0x5a7474
 
 
 command_prefix="!@#$"
+
+
+#what the bot is listening to
+#remember, the message already has "listening to " so fill in the blank
+bot_activity = "your problems"
