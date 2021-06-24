@@ -11,6 +11,7 @@ utils = "^1.0.1"
 aiohttp = "^3.7.4"
 flask = "^2.0.1"
 python-dotenv = "^0.17.1"
+replit = "^3.1.0"
 
 [tool.poetry.dev-dependencies]
 
