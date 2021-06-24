@@ -191,3 +191,5 @@ class LogAnalyzer(Cog):
             else:
                 # Raise if status >= 400
                 r.raise_for_status()
+def setup(client):
+  client.add_cog(LogAnalyzer(client))
